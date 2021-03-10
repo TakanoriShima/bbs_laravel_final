@@ -18,7 +18,13 @@
             <div class="row mt-3">
                 <h1 class="text-center col-sm-12">id: {{ $message->id }} の投稿編集</h1>
             </div>
-
+            @if($errors !== null)
+            <ul class="row mt-2">
+            @foreach($errors as $error)  
+                <li class="text-center col-sm-12">{{ $error }}</li>
+            @endforeach
+            </ul>
+            @endif
             <div class="row mt-2">
                 <!--<form class="col-sm-12" action="update.php" method="POST" enctype="multipart/form-data">-->
                 <form class="col-sm-12" action="/messages/{{ $message->id }}" method="POST" enctype="multipart/form-data">
@@ -75,7 +81,7 @@
                     </div>
                 </form>
              <div class="row mt-5">
-                <a href="index.php" class="btn btn-primary">投稿一覧</a>
+                <a href="/" class="btn btn-primary">投稿一覧</a>
             </div>
         </div>
         

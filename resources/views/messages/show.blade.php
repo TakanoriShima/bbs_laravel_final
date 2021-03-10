@@ -19,6 +19,12 @@
                 <h1 class="text-center col-sm-12">id: {{ $message->id }} の投稿詳細</h1>
             </div>
             
+            @if ($flash_message !== null)
+            <div class="row mt-2">
+                <h2 class="text-center col-sm-12">{{ $flash_message }}</h1>
+            </div>
+            @endif
+            
             <div class="row mt-2">
                 <table class="table table-bordered table-striped">
                     <tr>

@@ -19,6 +19,19 @@
                 <h1 class=" col-sm-12 text-center">投稿一覧</h1>
             </div>
 
+            <!--セッションからフラッシュメッセージを取得し表示-->
+            <!--@if (session('flash_message') !== null)-->
+            <!--<div class="row mt-2">-->
+            <!--    <h2 class="text-center col-sm-12">{{ session('flash_message') }}</h1>-->
+            <!--</div>-->
+            <!--@endif-->
+            
+            @if ($flash_message !== null)
+            <div class="row mt-2">
+                <h2 class="text-center col-sm-12">{{ $flash_message }}</h1>
+            </div>
+            @endif
+
             <div class="row mt-2">
             @if($messages !== null)
             @if(count($messages) !== 0)

@@ -18,6 +18,13 @@
             <div class="row mt-3">
                 <h1 class="text-center col-sm-12">新規投稿</h1>
             </div>
+            @if($errors !== null)
+            <ul class="row mt-2">
+            @foreach($errors as $error)  
+                <li class="text-center col-sm-12">{{ $error }}</li>
+            @endforeach
+            </ul>
+            @endif
             <div class="row mt-2">
                 <!--<form class="col-sm-12" action="create.php" method="POST" enctype="multipart/form-data">-->
                 <form class="col-sm-12" action="/messages" method="POST" enctype="multipart/form-data">
