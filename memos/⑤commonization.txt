@@ -1,0 +1,476 @@
+### App Development(4) (Commonization views) =====================================
+
+## MessagesController
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Message;
+use Illuminate\Http\Request;
+
+class MessagesController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        // Messageモデルを使って全データ取得
+        $messages = Message::all();
+
+        // セッションからフラッシュメッセージ取得しセッション情報破棄
+        $flash_message = session('flash_message');
+        session()->forget('flash_message');
+        
+        // データを引き連れてviewへ移動
+        return view('messages.index', compact('messages', 'flash_message'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+
+        // 空のメッセージインスタンスを作成
+        $message = new Message();
+        
+        $flash_message = null;
+    
+        // データを引き連れてviewへ移動
+        return view('messages.create', compact('message', 'flash_message'));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        
+        // validation
+        // for image ref) https://qiita.com/maejima_f/items/7691aa9385970ba7e3ed
+        $this->validate($request, [
+            'name' => 'required',
+            'title' => 'required',
+            'body' => 'required',
+            'image' => [
+                'required',
+                'file',
+                'mimes:jpeg,jpg,png'
+            ]
+        ]);
+        
+        
+        // 入力情報の取得
+        $name = $request->input('name');
+        // $name = $request->name;
+        $title = $request->input('title');
+        $body = $request->input('body');
+        $file =  $request->image;
+        
+        $image = time() . $file->getClientOriginalName();
+        $target_path = public_path('uploads/');
+        // アップロード処理
+        $file->move($target_path, $image);
+        
+        // 入力情報をもとに新しいインスタンス作成
+        $message = new Message();
+
+        $message->name = $name;
+        $message->title = $title;
+        $message->body = $body;
+        $message->image = $image;
+
+        
+        // データベースに保存
+        $message->save();
+        
+        // フラッシュメッセージをセッションに保存
+        session(['flash_message' => '投稿が成功しました。']);
+        
+        // index action へリダイレクト
+        return redirect('/');
+
+    }
+
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Message  $message
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Message $message)
+    {
+        // セッションからフラッシュメッセージ取得しセッション情報破棄
+        $flash_message = session('flash_message');
+        session()->forget('flash_message');
+        
+        // データを引き連れてviewへ移動
+        return view('messages.show', compact('message', 'flash_message'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  \App\Message  $message
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Message $message)
+    {
+
+        $flash_message = null;
+        // データを引き連れてviewへ移動
+        return view('messages.edit', compact('message', 'flash_message'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Message  $message
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, Message $message)
+    {
+        
+        // validation
+        // for image ref) https://qiita.com/maejima_f/items/7691aa9385970ba7e3ed
+        $this->validate($request, [
+            'name' => 'required',
+            'title' => 'required',
+            'body' => 'required',
+            'image' => [
+                'file',
+                'mimes:jpeg,jpg,png'
+            ]
+        ]);
+        
+        // 入力情報の取得
+        $name = $request->input('name');
+        $title = $request->input('title');
+        $body = $request->input('body');
+        $file =  $request->image;
+        
+        // https://qiita.com/ryo-program/items/35bbe8fc3c5da1993366
+        if ($file) { // ファイルが選択されていれば
+            // 現在時刻ともともとのファイル名を組み合わせてランダムなファイル名作成
+            $image = time() . $file->getClientOriginalName();
+            // アップロードするフォルダ名取得
+            $target_path = public_path('uploads/');
+            // アップロード処理
+            $file->move($target_path, $image);
+        } else { // ファイルが選択されていなければ元の画像のファイル名のまま
+            $image = $message->image;
+        }
+        
+        // インスタンス情報の更新
+        $message->name = $name;
+        $message->title = $title;
+        $message->body = $body;
+        $message->image = $image;
+
+        // データベースに保存
+        $message->save();
+        
+        // フラッシュメッセージをセッションに保存
+        session(['flash_message' => '投稿を更新しました。']);
+            
+        // show action へリダイレクト
+        return redirect('/messages/' . $message->id);
+
+    }
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Message  $message
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Message $message)
+    {
+        // フラッシュメッセージ作成
+        $flash_message = 'id: ' . $message->id . 'の投稿が削除されました。';
+        
+        // データベースからデータを削除
+        $message->delete();
+        
+        // フラッシュメッセージをセッションに保存
+        session(['flash_message' => $flash_message]);
+        
+        // index action へリダイレクト
+        return redirect('/');
+        
+    }
+}
+
+# views/layouts/app.blade.php
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <!--<link rel="stylesheet" href="css/style.css">-->
+        <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+        <!--<link rel="shortcut icon" href="favicon.ico">-->
+        <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
+        <title>@yield('title')</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row mt-3">
+                <h1 class=" col-sm-12 text-center">@yield('title')</h1>
+            </div>
+            @include('commons.flash')
+            @include('commons.errors')
+            
+            @yield('content')
+        </div>
+        
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS, then Font Awesome -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <script defer src="https://use.fontawesome.com/releases/v5.7.2/js/all.js"></script>
+        <!--<script src="js/script.js'"></script>-->
+        <script src="{{asset('js/script.js')}}"></script>
+    </body>
+</html>
+
+# views/commons/flash.blade.php
+            @if ($flash_message !== null)
+            <div class="row mt-2">
+                <h2 class="text-center col-sm-12">{{ $flash_message }}</h1>
+            </div>
+            @endif
+
+# views/commons/errors.blade.php
+            @if ($errors->any())
+            <ul class="alert alert-danger" role="alert">
+                @foreach ($errors->all() as $error)
+                    <li class="ml-4">{{ $error }}</li>
+                @endforeach
+            </ul>
+            @endif
+
+# index.blade.php
+@extends('layouts.app')
+@section('title', '投稿一覧')
+@section('content')
+            <div class="row mt-2">
+            @if($messages !== null)
+            @if(count($messages) !== 0)
+                <table class="col-sm-12 table table-bordered table-striped">
+                    <tr>
+                        <th>ID</th>
+                        <th>ユーザ名</th>
+                        <th>タイトル</th>
+                        <th>内容</th>
+                        <th>投稿時間</th>
+                    </tr>
+                    </tr>
+                    
+                @foreach($messages as $message)
+                    <tr>
+                        <!--<td><a href="show.php?id=<?= $message->id ?>"><?= $message->id ?></a></td>-->
+                        <td><a href="/messages/{{ $message->id }}">{{ $message->id }}</a></td>
+                        <td>{{ $message->name }}</td>
+                        <td>{{ $message->title }}</td>
+                        <td>{{ $message->body }}</td>
+                        <td>{{ $message->created_at }}</td>
+                    </tr>
+                @endforeach
+                </table>
+            @else
+                    <p>データ一件もありません。</p>
+            @endif
+            </div>
+            @endif
+            <div class="row mt-5">
+                <!--<a href="new.php" class="btn btn-primary">新規投稿</a>-->
+                <a href="/messages/create" class="btn btn-primary">新規投稿</a>
+            </div> 
+        </div>
+@endsection
+
+# create.blade.php
+@extends('layouts.app')
+@section('title', '新規投稿')
+@section('content')
+            <div class="row mt-2">
+                <!--<form class="col-sm-12" action="create.php" method="POST" enctype="multipart/form-data">-->
+                <form class="col-sm-12" action="/messages" method="POST" enctype="multipart/form-data">
+                    <!--CSRFトークンを生成-->
+                    {{ csrf_field() }}
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">名前</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="name" value="{{old("name")}}">
+                        </div>
+                    </div>
+                
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">タイトル</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="title" value="{{old("title")}}">
+                        </div>
+                    </div>
+                    
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">内容</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="body" value="{{old("body")}}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">画像アップロード</label>
+                        <div class="col-3">
+                            <input type="file" name="image" accept='image/*' onchange="previewImage(this);">
+                        </div>
+                        <div class="col-7">
+                            <img id="preview" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" style="max-width:200px;">
+                        </div>
+                    </div>
+                    
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <div class="offset-2 col-10">
+                            <button type="submit" class="btn btn-primary">投稿</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+             <div class="row mt-5">
+                <a href="/messages" class="btn btn-primary">投稿一覧</a>
+            </div>
+        </div>
+@endsection
+
+# show.blade.php
+@extends('layouts.app')
+@section('title', 'id: ' .  $message->id .  'の投稿詳細')
+@section('content')
+            <div class="row mt-2">
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <th>id</th>
+                        <td>{{ $message->id }}</td>
+                    </tr>
+                    <tr>
+                        <th>名前</th>
+                        <td>{{ $message->name }}</td>
+                    </tr>
+                    <tr>
+                        <th>タイトル</th>
+                        <td>{{ $message->title }}</td>
+                    </tr>
+                    <tr>
+                        <th>内容</th>
+                        <td>{{ $message->body }}</td>
+                    </tr>
+                    <tr>
+                        <th>画像</th>
+                        <td><img src="{{ asset('uploads') }}/{{ $message->image }}" alt="表示する画像がありません。"></td>
+                    </tr>
+                </table>
+            </div> 
+            
+            <div class="row">
+                <!--<a href="edit.php?id=<{{ $message->id }}" class="col-sm-6 btn btn-primary">編集</a>-->
+                <a href="/messages/{{ $message->id }}/edit" class="col-sm-6 btn btn-primary">編集</a>
+                <!--<form class="col-sm-6" action="delete.php" method="POST">-->
+                <form class="col-sm-6" action="/messages/{{ $message->id }}" method="POST">
+                    <!--CSRFトークンを生成-->
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <!--<input type="hidden" name="id" value="{{ $message->id }}">-->
+                    <button type="submit" class="btn btn-danger col-sm-12" onclick="return confirm('投稿を削除します。よろしいですか？')">削除</button>
+                </form>
+            </div>
+            
+            <div class="row mt-5">
+                <!--<a href="index.php" class="btn btn-primary">投稿一覧</a>-->
+                <a href="/messages" class="btn btn-primary">投稿一覧</a>
+            </div>
+        </div>
+@endsection
+
+# edit.blade.php
+@extends('layouts.app')
+@section('title', 'id: ' .  $message->id  . ' の投稿編集')
+@section('content')
+            <div class="row mt-2">
+                <!--<form class="col-sm-12" action="update.php" method="POST" enctype="multipart/form-data">-->
+                <form class="col-sm-12" action="/messages/{{ $message->id }}" method="POST" enctype="multipart/form-data">
+                    <!--CSRFトークンを生成-->
+                    {{ csrf_field() }}
+                    <!-- _method 名で　PUT値を送る-->
+                    <input type="hidden" name="_method" value="PUT">
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">名前</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="name" value="{{ $message->name }}">
+                        </div>
+                    </div>
+                
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">タイトル</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="title" value="{{ $message->title }}";>
+                        </div>
+                    </div>
+                    
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">内容</label>
+                        <div class="col-10">
+                            <input type="text" class="form-control" name="body" value="{{ $message->body }}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">現在の画像</label>
+                        <div class="col-10">
+                            <img src="{{ asset('uploads') }}/{{ $message->image }}" alt="表示する画像がありません。">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group row">
+                        <label class="col-2 col-form-label">画像アップロード</label>
+                        <div class="col-3">
+                            <input type="file" name="image" accept='image/*' onchange="previewImage(this);">
+                        </div>
+                        <div class="col-7">
+                            <img id="preview" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" style="max-width:200px;">
+                        </div>
+                    </div>
+
+                    <!-- 1行 -->
+                    <div class="form-group row">
+                        <div class="offset-sm-2 col-sm-1">
+                            <button type="submit" class="btn btn-primary">更新</button>
+                        </div>
+                    </div>
+                </form>
+             <div class="row mt-5">
+                <a href="/" class="btn btn-primary">投稿一覧</a>
+            </div>
+        </div>
+ @endsection

@@ -1,0 +1,86 @@
+### Session
+
+## redirect使用
+
+# コントローラ側
+return redirect('/')->with('flash_message', '投稿が成功しました。');
+// $request->session()->flash('flash_message', '投稿が成功しました。');            
+// return redirect('/');
+
+# ビュー(blade)側
+@if (session('flash_message') !== null)
+{{ session('flash_message') }}
+@endif
+
+## return view 使用
+
+# コントローラ側
+$flash_message = 'id: ' . $message->id . 'の投稿が更新されました。';
+return view('messages.show', compact('message','flash_message'));
+
+# ビュー(blade)側
+<!--セッションからフラッシュメッセージを取得し表示-->
+@if ($flash_message !== null)
+{{ $flash_message }}
+@endif
+
+//@if(Session::has('flash_message'))
+//{{ session('flash_message') }}
+//@endif
+
+### Session --------------------------------
+ref) https://readouble.com/laravel/5.8/ja/session.html
+ref) https://laraweb.net/knowledge/3428/
+ref) https://techacademy.jp/magazine/18789
+
+## セッションに情報をセット
+$request->session()->put('key', 'value');
+// 配列の場合
+$request->session()->push('errors', $errors);
+session()->push('errors', $errors);
+// フォームからの name 属性をセッションに保存する場合
+$request->session()->put('name', $request->input('name');
+// グローバルなヘルパ関数session()を使用
+session(['key1' => 'value1', 'key2' => ‘value2']);
+session()->put(['key1' => 'value1', 'key2' => 'value2']
+
+// 存在チェック
+if ($request->session()->has('key')) {
+  //
+}
+if (session()->exists('key')) {
+    // 存在する
+}
+if (session()->has('key')) {
+    // 存在しnullではない
+}
+
+// セッションからキー値で値を取得
+$value = $request->session()->get('key');
+$value = session('key');
+$value = session('key', 'default');
+$value = session('key', function () {
+    return 'default';
+});
+
+// セッションの全情報取得
+$data = $request->session()->all();
+$data = session()->all();
+
+//ポストデータすべての取得
+$post_data = $request::all();
+
+// flash_message
+$request->session()->flash('status', 'Task was successful!');
+
+// セッション情報を削除
+$request->session()->forget('key');
+session()->forget('key');
+
+// 指定したデータをセッションから取得後、そのデータを削除する
+$value = session()->pull('key');
+
+// 全て削除
+$request->session()->flush();
+session()->flush();
+
